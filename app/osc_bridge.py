@@ -54,12 +54,18 @@ def send_marker(
     health: float,
     send_state: Dict,
     dead_zone: float,
+    address: Optional[str] = None,
 ) -> None:
-    """Send /aruco/{id} [x, y, angle, size, health] if any value changed beyond dead_zone."""
+    """Send an OSC message for a marker if any value changed beyond dead_zone.
+
+    ``address`` is the full OSC path to use. Falls back to ``/aruco/{id}``
+    when not supplied (e.g. when running without a preset).
+    """
     key = str(marker_id)
     current = (x_norm, y_norm, angle, size, health)
     last = send_state.get(key)
 
     if last is None or any(abs(c - l) >= dead_zone for c, l in zip(current, last)):
         send_state[key] = current
-        client.send_message(f"/aruco/{marker_id}", list(current))
+        osc_address = address if address is not None else f"/aruco/{marker_id}"
+        client.send_message(osc_address, list(current))

@@ -1,4 +1,5 @@
 CONFIG = {
+    "preset": "chess",
     "camera_index": 0,
     "width": 1280,
     "height": 720,
@@ -22,9 +23,9 @@ CONFIG = {
     "show_timing": True,
 
     # For interpolation of missing marker detection. Going from last value to new in x seconds
-    "interpolation_min": 5,
+    "interpolation_min": 2,
     # id is considered lost after this many seconds of not being detected, even with interpolation
-    "interpolation_timeout":8,
+    "interpolation_timeout":5,
     "phantom_decay": True,
 
     # OSC output

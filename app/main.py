@@ -5,6 +5,7 @@ from aruco_tracker import create_aruco_detector, detect_markers, draw_markers, m
 from camera import close_camera, open_camera, read_frame
 from config import CONFIG
 from osc_bridge import average_duplicate_markers, open_osc_client, send_marker
+from preset_loader import load_preset
 
 
 def lerp_scalar(start: float, end: float, amount: float) -> float:
@@ -34,6 +35,8 @@ def run() -> int:
     if not cap.isOpened():
         print("ERROR: Could not open camera.")
         return 1
+
+    preset = load_preset(CONFIG.get("preset"))
 
     detector = create_aruco_detector(CONFIG["aruco_dictionary"], bool(CONFIG.get("refine_corners", False)))
     osc_client = open_osc_client(str(CONFIG["osc_host"]), int(CONFIG["osc_port"]))
@@ -78,7 +81,7 @@ def run() -> int:
             t2 = time.perf_counter()
             now = t2
             markers = detect_markers(detector, gray)
-            markers = [m for m in markers if 0 <= m["id"] <= int(CONFIG["max_id"])]
+            markers = [m for m in markers if preset.is_valid(m["id"])]
             markers = [m for m in markers if float(m["size"]) >= min_size_px]
             markers = average_duplicate_markers(markers)
 
@@ -150,14 +153,16 @@ def run() -> int:
                 health = float(track.get("health", 1.0))
                 x_norm = max(0.0, min(1.0, cx / frame_w))
                 y_norm = max(0.0, min(1.0, cy / frame_h))
+                size_norm = max(0.0, min(1.0, float(track["size"]) / max(frame_w, frame_h)))
                 send_marker(
                     osc_client, marker_id,
                     x_norm, y_norm,
                     float(track["angle"]),
-                    float(track["size"]),
+                    size_norm,
                     health,
                     osc_send_state,
                     osc_dead_zone,
+                    address=preset.get_address(marker_id),
                 )
                 markers.append({
                     "id": marker_id,
